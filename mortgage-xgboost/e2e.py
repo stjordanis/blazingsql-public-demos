@@ -329,11 +329,15 @@ def create_delinq_features(table, **kwargs):
     
 
     new_tables = {"delinq_30": result_delinq_30.columns, "delinq_90": result_delinq_90.columns, "delinq_180": result_delinq_180.columns}
-    query = """SELECT d30.loan_id, delinquency_30, COALESCE(delinquency_90, DATE '1970-01-01') as delinquency_90,
-                COALESCE(delinquency_180, DATE '1970-01-01') as delinquency_180 FROM main.delinq_30 as d30
+    query = """SELECT d30.loan_id, delinquency_30, delinquency_90,
+                delinquency_180 FROM main.delinq_30 as d30
                 LEFT OUTER JOIN main.delinq_90 as d90 ON d30.loan_id = d90.loan_id
                 LEFT OUTER JOIN main.delinq_180 as d180 ON d30.loan_id = d180.loan_id"""
     result_merge = pyblazing.run_query(query, new_tables)
+    result_merge.columns['delinquency_90'] = result_merge.columns['delinquency_90'].fillna(
+        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+    result_merge.columns['delinquency_180'] = result_merge.columns['delinquency_180'].fillna(
+        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
     Chronometer.show(chronometer, 'Create deliquency features')
     return result_merge
 
@@ -342,11 +346,17 @@ def join_ever_delinq_features(everdf_tmp, delinq_merge, **kwargs):
     chronometer = Chronometer.makeStarted()
     tables = {"everdf": everdf_tmp, "delinq": delinq_merge}
     query = """SELECT everdf.loan_id as loan_id, ever_30, ever_90, ever_180,
-                  COALESCE(delinquency_30, DATE '1970-01-01') as delinquency_30,
-                  COALESCE(delinquency_90, DATE '1970-01-01') as delinquency_90,
-                  COALESCE(delinquency_180, DATE '1970-01-01') as delinquency_180 FROM main.everdf as everdf
+                  delinquency_30,
+                  delinquency_90,
+                  delinquency_180 FROM main.everdf as everdf
                   LEFT OUTER JOIN main.delinq as delinq ON everdf.loan_id = delinq.loan_id"""
     result_merge = pyblazing.run_query(query, tables)
+    result_merge.columns['delinquency_30'] = result_merge.columns['delinquency_30'].fillna(
+        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+    result_merge.columns['delinquency_90'] = result_merge.columns['delinquency_90'].fillna(
+        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+    result_merge.columns['delinquency_180'] = result_merge.columns['delinquency_180'].fillna(
+        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
     Chronometer.show(chronometer, 'Create ever deliquency features')
     return result_merge
 
@@ -359,18 +369,28 @@ def create_joined_df(gdf, everdf, **kwargs):
                 perf.monthly_reporting_period as mrp_timestamp,
                 EXTRACT(MONTH FROM perf.monthly_reporting_period) as timestamp_month,
                 EXTRACT(YEAR FROM perf.monthly_reporting_period) as timestamp_year,
-                COALESCE(perf.current_loan_delinquency_status, -1) as delinquency_12,
-                COALESCE(perf.current_actual_upb, 999999999.9) as upb_12,
+                perf.current_loan_delinquency_status as delinquency_12,
+                perf.current_actual_upb as upb_12,
                 everdf.ever_30 as ever_30,
                 everdf.ever_90 as ever_90, 
                 everdf.ever_180 as ever_180, 
-                COALESCE(everdf.delinquency_30, DATE '1970-01-01') as delinquency_30, 
-                COALESCE(everdf.delinquency_90, DATE '1970-01-01') as delinquency_90, 
-                COALESCE(everdf.delinquency_180, DATE '1970-01-01') as delinquency_180
+                everdf.delinquency_30 as delinquency_30, 
+                everdf.delinquency_90 as delinquency_90, 
+                everdf.delinquency_18 as delinquency_180
                 FROM main.perf as perf 
                 LEFT OUTER JOIN main.everdf as everdf ON perf.loan_id = everdf.loan_id"""
 
     results = pyblazing.run_query(query, tables)
+
+    results.columns['upb_12'] = results.columns['upb_12'].fillna(999999999)
+    results.columns['delinquency_12'] = results.columns['delinquency_12'].fillna(-1)
+    results.columns['ever_30'] = results.columns['ever_30'].fillna(-1)
+    results.columns['ever_90'] = results.columns['ever_90'].fillna(-1)
+    results.columns['ever_180'] = results.columns['ever_180'].fillna(-1)
+    results.columns['delinquency_30'] = results.columns['delinquency_30'].fillna(-1)
+    results.columns['delinquency_90'] = results.columns['delinquency_90'].fillna(-1)
+    results.columns['delinquency_180'] = results.columns['delinquency_180'].fillna(-1)
+
     Chronometer.show(chronometer, 'Create Joined DF')
     return results
 
