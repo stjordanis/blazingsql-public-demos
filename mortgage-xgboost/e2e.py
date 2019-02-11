@@ -376,7 +376,7 @@ def create_joined_df(gdf, everdf, **kwargs):
                 everdf.ever_180 as ever_180, 
                 everdf.delinquency_30 as delinquency_30, 
                 everdf.delinquency_90 as delinquency_90, 
-                everdf.delinquency_18 as delinquency_180
+                everdf.delinquency_180 as delinquency_180
                 FROM main.perf as perf 
                 LEFT OUTER JOIN main.everdf as everdf ON perf.loan_id = everdf.loan_id"""
 
