@@ -384,9 +384,9 @@ def create_joined_df(gdf, everdf, **kwargs):
 
     results.columns['upb_12'] = results.columns['upb_12'].fillna(999999999)
     results.columns['delinquency_12'] = results.columns['delinquency_12'].fillna(-1)
-    results.columns['ever_30'] = results.columns['ever_30'].fillna(-1)
-    results.columns['ever_90'] = results.columns['ever_90'].fillna(-1)
-    results.columns['ever_180'] = results.columns['ever_180'].fillna(-1)
+    results.columns['ever_30'] = results.columns['ever_30'].astype('int8').fillna(-1)
+    results.columns['ever_90'] = results.columns['ever_90'].astype('int8').fillna(-1)
+    results.columns['ever_180'] = results.columns['ever_180'].astype('int8').fillna(-1)
     results.columns['delinquency_30'] = results.columns['delinquency_30'].fillna(-1)
     results.columns['delinquency_90'] = results.columns['delinquency_90'].fillna(-1)
     results.columns['delinquency_180'] = results.columns['delinquency_180'].fillna(-1)
