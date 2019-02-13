@@ -334,10 +334,14 @@ def create_delinq_features(table, **kwargs):
                 LEFT OUTER JOIN main.delinq_90 as d90 ON d30.loan_id = d90.loan_id
                 LEFT OUTER JOIN main.delinq_180 as d180 ON d30.loan_id = d180.loan_id"""
     result_merge = pyblazing.run_query(query, new_tables)
-    result_merge.columns['delinquency_90'] = result_merge.columns['delinquency_90'].fillna(
-        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
-    result_merge.columns['delinquency_180'] = result_merge.columns['delinquency_180'].fillna(
-        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+    if result_merge.columns['delinquency_90'].has_null_mask:
+        result_merge.columns['delinquency_90'] = result_merge.columns['delinquency_90'].fillna(
+            np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+
+    if result_merge.columns['delinquency_180'].has_null_mask:
+        result_merge.columns['delinquency_180'] = result_merge.columns['delinquency_180'].fillna(
+            np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+
     Chronometer.show(chronometer, 'Create deliquency features')
     return result_merge
 
@@ -351,12 +355,15 @@ def join_ever_delinq_features(everdf_tmp, delinq_merge, **kwargs):
                   delinquency_180 FROM main.everdf as everdf
                   LEFT OUTER JOIN main.delinq as delinq ON everdf.loan_id = delinq.loan_id"""
     result_merge = pyblazing.run_query(query, tables)
-    result_merge.columns['delinquency_30'] = result_merge.columns['delinquency_30'].fillna(
-        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
-    result_merge.columns['delinquency_90'] = result_merge.columns['delinquency_90'].fillna(
-        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
-    result_merge.columns['delinquency_180'] = result_merge.columns['delinquency_180'].fillna(
-        np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+    if result_merge.columns['delinquency_30'].has_null_mask:
+        result_merge.columns['delinquency_30'] = result_merge.columns['delinquency_30'].fillna(
+            np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+    if result_merge.columns['delinquency_90'].has_null_mask:
+        result_merge.columns['delinquency_90'] = result_merge.columns['delinquency_90'].fillna(
+            np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
+    if result_merge.columns['delinquency_180'].has_null_mask:
+        result_merge.columns['delinquency_180'] = result_merge.columns['delinquency_180'].fillna(
+            np.dtype('datetime64[ms]').type('1970-01-01').astype('datetime64[ms]'))
     Chronometer.show(chronometer, 'Create ever deliquency features')
     return result_merge
 
@@ -382,14 +389,22 @@ def create_joined_df(gdf, everdf, **kwargs):
 
     results = pyblazing.run_query(query, tables)
 
-    results.columns['upb_12'] = results.columns['upb_12'].fillna(999999999)
-    results.columns['delinquency_12'] = results.columns['delinquency_12'].fillna(-1)
-    results.columns['ever_30'] = results.columns['ever_30'].astype('int8').fillna(-1)
-    results.columns['ever_90'] = results.columns['ever_90'].astype('int8').fillna(-1)
-    results.columns['ever_180'] = results.columns['ever_180'].astype('int8').fillna(-1)
-    results.columns['delinquency_30'] = results.columns['delinquency_30'].fillna(-1)
-    results.columns['delinquency_90'] = results.columns['delinquency_90'].fillna(-1)
-    results.columns['delinquency_180'] = results.columns['delinquency_180'].fillna(-1)
+    if results.columns['upb_12'].has_null_mask:
+        results.columns['upb_12'] = results.columns['upb_12'].fillna(999999999)
+    if results.columns['delinquency_12'].has_null_mask:
+        results.columns['delinquency_12'] = results.columns['delinquency_12'].fillna(-1)
+    if results.columns['ever_30'].has_null_mask:
+        results.columns['ever_30'] = results.columns['ever_30'].astype('int8').fillna(-1)
+    if results.columns['ever_90'].has_null_mask:
+        results.columns['ever_90'] = results.columns['ever_90'].astype('int8').fillna(-1)
+    if results.columns['ever_180'].has_null_mask:
+        results.columns['ever_180'] = results.columns['ever_180'].astype('int8').fillna(-1)
+    if results.columns['delinquency_30'].has_null_mask:
+        results.columns['delinquency_30'] = results.columns['delinquency_30'].fillna(-1)
+    if results.columns['delinquency_90'].has_null_mask:
+        results.columns['delinquency_90'] = results.columns['delinquency_90'].fillna(-1)
+    if results.columns['delinquency_180'].has_null_mask:
+        results.columns['delinquency_180'] = results.columns['delinquency_180'].fillna(-1)
 
     Chronometer.show(chronometer, 'Create Joined DF')
     return results
@@ -478,7 +493,8 @@ def last_mile_cleaning(df, **kwargs):
             df[col] = df[col].cat.codes
         df[col] = df[col].astype('float32')
     df['delinquency_12'] = df['delinquency_12'] > 0
-    df['delinquency_12'] = df['delinquency_12'].fillna(False).astype('int32')
+    if df['delinquency_12'].has_null_mask:
+        df['delinquency_12'] = df['delinquency_12'].fillna(False).astype('int32')
     for column in df.columns:
         df[column] = df[column].fillna(-1)
     Chronometer.show(chronometer, 'Last mile cleaning')
